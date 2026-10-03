@@ -4,11 +4,11 @@ use crate::{model::{shared::state, telemetry::TelemetryState}};
 
 #[derive(Debug)]
 pub struct Alarm {
-    vehicle_id: Uuid,
-    alarm_kind: state::IssueKind,
-    alarm_value: String,
-    severity: state::Severity,
-    timestamp: DateTime<Utc>
+    pub vehicle_id: Uuid,
+    pub alarm_kind: state::IssueKind,
+    pub alarm_value: String,
+    pub severity: state::Severity,
+    pub timestamp: DateTime<Utc>
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -21,7 +21,7 @@ pub struct Thresholds {
 #[derive(Debug, Clone, Copy)]
 pub struct DrivingThresholds {
     //Units: km/h/s
-    pub cruising: f64,
+    //pub cruising: f64,
     pub acceleration: f64,
     pub warning_acceleration: f64,
     pub critical_acceleration: f64,
@@ -34,7 +34,7 @@ impl Default for DrivingThresholds {
     fn default() -> Self {
         Self {
             // Absolute acceleration below this is cruising.
-            cruising: 1.5,
+            //cruising: 1.5,
 
             // Positive acceleration.
             acceleration: 4.0,
@@ -150,13 +150,13 @@ impl AlarmGenerator {
     }
 
     fn check_threshold(
-    &mut self,
-    telemetry: &TelemetryState,
-    issue_kind: state::IssueKind,
-    current: f64,
-    thresholds: Thresholds,
-    direction: ThresholdDirection,
-    alarms: &mut Vec<Alarm>
+        &mut self,
+        telemetry: &TelemetryState,
+        issue_kind: state::IssueKind,
+        current: f64,
+        thresholds: Thresholds,
+        direction: ThresholdDirection,
+        alarms: &mut Vec<Alarm>
     ) {
         let previous = self
             .previous_values

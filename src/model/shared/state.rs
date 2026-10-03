@@ -1,10 +1,8 @@
-use std::time::Duration;    
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IssueKind {
     Acceleration,
     Deceleration,
-    Cruising,
+    //Cruising,
     HarshAcceleration,
     HarshBrake,
 
@@ -21,23 +19,23 @@ pub enum Severity {
     Critical
 }
 
+#[derive(Debug)]
 pub enum Servicing {
-    refuled,
-    radiated,
-    recharged,
-    Normalize
+    Refuel,
+    Radiate,
+    Recharge,
+    NormalizePressure
 }
 
-#[derive(Debug, PartialEq)]
-enum VehicleState {
-    Starting,
-    Driving,
-    Stopping,
-    Stopped,
-}
 
-struct VehicleSimulator {
-    state: VehicleState,
-    elapsed: Duration,
-    stop_elapsed: Duration,
+impl IssueKind {
+    pub fn servicing(self) -> Option<Servicing> {
+        match self {
+            IssueKind::FuelLevel => Some(Servicing::Refuel),
+            IssueKind::EngineTemperature => Some(Servicing::Radiate),
+            IssueKind::BatteryLevel => Some(Servicing::Recharge),
+            IssueKind::TirePressure => Some(Servicing::NormalizePressure),
+            _ => None
+        }
+    }
 }

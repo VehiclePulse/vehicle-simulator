@@ -90,18 +90,14 @@ pub fn update_speed(
 
 pub fn update_stopping_speed(
     telemetry: &mut TelemetryState,
-    stop_elapsed: &mut f64,
     elapsed_seconds: f64,
-) {
-    const STOP_DURATION: f64 = 10.0;
+) -> bool {
+    const STOP_DECELERATION: f64 = 8.0; // km/h/s
 
-    *stop_elapsed += elapsed_seconds;
+    telemetry.speed = (
+        telemetry.speed
+        - STOP_DECELERATION * elapsed_seconds
+    ).max(0.0);
 
-    let progress = (*stop_elapsed / STOP_DURATION).clamp(0.0, 1.0);
-
-    telemetry.speed *= 1.0 - progress;
-
-    if progress >= 1.0 {
-        telemetry.speed = 0.0;
-    }
+    telemetry.speed == 0.0
 }

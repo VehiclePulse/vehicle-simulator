@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
 pub enum IssueKind {
     Acceleration,
     Deceleration,
@@ -12,21 +14,20 @@ pub enum IssueKind {
     TirePressure,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum Severity {
     Information,
     Warning,
-    Critical
+    Critical,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum Servicing {
     Refuel,
     Radiate,
     Recharge,
-    NormalizePressure
+    NormalizePressure,
 }
-
 
 impl IssueKind {
     pub fn servicing(self) -> Option<Servicing> {
@@ -35,7 +36,7 @@ impl IssueKind {
             IssueKind::EngineTemperature => Some(Servicing::Radiate),
             IssueKind::BatteryLevel => Some(Servicing::Recharge),
             IssueKind::TirePressure => Some(Servicing::NormalizePressure),
-            _ => None
+            _ => None,
         }
     }
 }

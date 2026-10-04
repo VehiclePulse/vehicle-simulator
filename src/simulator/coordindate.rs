@@ -20,13 +20,9 @@ pub fn update_coordinates(
 
     let latitude_radians = *latitude * PI / 180.0;
 
-    let delta_latitude =
-        north_km / EARTH_RADIUS_KM * 180.0 / PI;
+    let delta_latitude = north_km / EARTH_RADIUS_KM * 180.0 / PI;
 
-    let delta_longitude =
-        east_km / (EARTH_RADIUS_KM * latitude_radians.cos())
-            * 180.0
-            / PI;
+    let delta_longitude = east_km / (EARTH_RADIUS_KM * latitude_radians.cos()) * 180.0 / PI;
 
     *latitude += delta_latitude;
     *longitude += delta_longitude;

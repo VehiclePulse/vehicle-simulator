@@ -1,8 +1,4 @@
-pub fn update_engine_temperature(
-    temperature: &mut f64,
-    speed: f64,
-    elapsed_seconds: f64,
-) {
+pub fn update_engine_temperature(temperature: &mut f64, speed: f64, elapsed_seconds: f64) {
     let temperature_change = if (40.0..=70.0).contains(&speed) {
         // Gradual temperature change.
         0.005

@@ -1,12 +1,7 @@
-use crate::model::telemetry::{
-    TelemetryState
-};
+use crate::model::telemetry::TelemetryState;
 use rand::RngExt;
 
-pub fn update_starting_speed(
-    telemetry: &mut TelemetryState,
-    rng: &mut impl RngExt,
-) {
+pub fn update_starting_speed(telemetry: &mut TelemetryState, rng: &mut impl RngExt) {
     let change = rng.random_range(2.0..8.0);
 
     telemetry.speed += change;
@@ -15,12 +10,7 @@ pub fn update_starting_speed(
     telemetry.speed = telemetry.speed.min(39.0);
 }
 
-
-pub fn update_speed(
-    telemetry: &mut TelemetryState,
-    rng: &mut impl RngExt,
-    elapsed_seconds: f64,
-) {
+pub fn update_speed(telemetry: &mut TelemetryState, rng: &mut impl RngExt, elapsed_seconds: f64) {
     let event = rng.random_range(1..=20);
 
     let acceleration = match event {
@@ -28,9 +18,7 @@ pub fn update_speed(
         1..=6 => {
             let value = rng.random_range(1.0..4.0);
 
-            println!(
-                "Accelerating: +{value:.2} km/h/s"
-            );
+            //println!("Accelerating: +{value:.2} km/h/s");
 
             value
         }
@@ -39,9 +27,7 @@ pub fn update_speed(
         7..=12 => {
             let value = rng.random_range(-4.0..-1.0);
 
-            println!(
-                "Decelerating: {value:.2} km/h/s"
-            );
+            //println!("Decelerating: {value:.2} km/h/s");
 
             value
         }
@@ -50,9 +36,7 @@ pub fn update_speed(
         13..=16 => {
             let value = rng.random_range(-1.5..1.5);
 
-            println!(
-                "Cruising: {value:+.2} km/h/s"
-            );
+            //println!("Cruising: {value:+.2} km/h/s");
 
             value
         }
@@ -61,9 +45,7 @@ pub fn update_speed(
         17..=18 => {
             let value = rng.random_range(7.0..12.0);
 
-            println!(
-                "Harsh acceleration: +{value:.2} km/h/s"
-            );
+            //println!("Harsh acceleration: +{value:.2} km/h/s");
 
             value
         }
@@ -72,9 +54,7 @@ pub fn update_speed(
         19..=20 => {
             let value = rng.random_range(-12.0..-7.0);
 
-            println!(
-                "Harsh braking: {value:.2} km/h/s"
-            );
+            //println!("Harsh braking: {value:.2} km/h/s");
 
             value
         }
@@ -84,20 +64,13 @@ pub fn update_speed(
 
     telemetry.speed += acceleration * elapsed_seconds;
 
-    telemetry.speed = telemetry.speed.clamp(0.0, 120.0);
+    telemetry.speed = telemetry.speed.clamp(20.0, 120.0);
 }
 
-
-pub fn update_stopping_speed(
-    telemetry: &mut TelemetryState,
-    elapsed_seconds: f64,
-) -> bool {
+pub fn update_stopping_speed(telemetry: &mut TelemetryState, elapsed_seconds: f64) -> bool {
     const STOP_DECELERATION: f64 = 8.0; // km/h/s
 
-    telemetry.speed = (
-        telemetry.speed
-        - STOP_DECELERATION * elapsed_seconds
-    ).max(0.0);
+    telemetry.speed = (telemetry.speed - STOP_DECELERATION * elapsed_seconds).max(0.0);
 
     telemetry.speed == 0.0
 }

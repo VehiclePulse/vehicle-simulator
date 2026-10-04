@@ -1,8 +1,4 @@
-pub fn update_fuel(
-    fuel_level: &mut f64,
-    speed: f64,
-    elapsed_seconds: f64,
-) {
+pub fn update_fuel(fuel_level: &mut f64, speed: f64, elapsed_seconds: f64) {
     let fuel_rate = if (40.0..=70.0).contains(&speed) {
         // Efficient speed range.
         0.0005

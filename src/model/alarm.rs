@@ -1,21 +1,22 @@
-use uuid::Uuid;
+use crate::model::{shared::state, telemetry::TelemetryState};
 use chrono::{DateTime, Utc};
-use crate::{model::{shared::state, telemetry::TelemetryState}};
+use serde::Serialize;
+use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Alarm {
     pub vehicle_id: Uuid,
     pub alarm_kind: state::IssueKind,
     pub alarm_value: String,
     pub severity: state::Severity,
-    pub timestamp: DateTime<Utc>
+    pub timestamp: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Thresholds {
     pub information: Option<f64>,
     pub warning: Option<f64>,
-    pub critical: Option<f64>
+    pub critical: Option<f64>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -49,18 +50,16 @@ impl Default for DrivingThresholds {
     }
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub enum ThresholdDirection {
     Below,
-    Above
+    Above,
 }
-
 
 pub struct AlarmGenerator {
     previous_values: std::collections::HashMap<state::IssueKind, f64>,
     previous_speed: Option<f64>,
-    driving_threshold: DrivingThresholds
+    driving_threshold: DrivingThresholds,
 }
 
 impl AlarmGenerator {
@@ -68,15 +67,15 @@ impl AlarmGenerator {
         Self {
             previous_values: std::collections::HashMap::new(),
             previous_speed: None,
-            driving_threshold: DrivingThresholds::default()
+            driving_threshold: DrivingThresholds::default(),
         }
     }
 
-    pub fn generate(
+    pub(crate) fn generate(
         &mut self,
         elasped_second: f64,
-        telemetry: &TelemetryState
-    ) ->Vec<Alarm> {
+        telemetry: &TelemetryState,
+    ) -> Vec<Alarm> {
         let mut alarms = Vec::new();
 
         //fuel
@@ -87,10 +86,10 @@ impl AlarmGenerator {
             Thresholds {
                 information: Some(100.0),
                 warning: Some(30.0),
-                critical: Some(10.0)
+                critical: Some(10.0),
             },
             ThresholdDirection::Below,
-            &mut alarms
+            &mut alarms,
         );
 
         // Battery
@@ -126,7 +125,7 @@ impl AlarmGenerator {
             telemetry.tire_pressure.front_left,
             telemetry.tire_pressure.front_right,
             telemetry.tire_pressure.rear_left,
-            telemetry.tire_pressure.rear_right
+            telemetry.tire_pressure.rear_right,
         ] {
             self.check_threshold(
                 telemetry,
@@ -139,7 +138,7 @@ impl AlarmGenerator {
                 },
                 ThresholdDirection::Below,
                 &mut alarms,
-            );    
+            );
         }
 
         self.check_driving_behavior(telemetry, elasped_second, &mut alarms);
@@ -156,11 +155,9 @@ impl AlarmGenerator {
         current: f64,
         thresholds: Thresholds,
         direction: ThresholdDirection,
-        alarms: &mut Vec<Alarm>
+        alarms: &mut Vec<Alarm>,
     ) {
-        let previous = self
-            .previous_values
-            .insert(issue_kind, current);
+        let previous = self.previous_values.insert(issue_kind, current);
 
         let Some(previous) = previous else {
             return;
@@ -193,12 +190,12 @@ impl AlarmGenerator {
         };
 
         if let Some(severity) = severity {
-            alarms.push(Alarm { 
-                vehicle_id: telemetry.vehicle_id, 
-                alarm_kind: issue_kind, 
-                alarm_value: format!("{current:.2}"), 
-                severity, 
-                timestamp: telemetry.last_updated_at 
+            alarms.push(Alarm {
+                vehicle_id: telemetry.vehicle_id,
+                alarm_kind: issue_kind,
+                alarm_value: format!("{current:.2}"),
+                severity,
+                timestamp: telemetry.last_updated_at,
             });
         }
     }
@@ -227,62 +224,40 @@ impl AlarmGenerator {
             0.0
         };
 
-        let (issue_kind, severity) =
-            if acceleration >= thresholds.critical_acceleration {
-                (
-                    state::IssueKind::HarshAcceleration,
-                    state::Severity::Critical,
-                )
-            } else if acceleration >= thresholds.warning_acceleration {
-                (
-                    state::IssueKind::HarshAcceleration,
-                    state::Severity::Warning,
-                )
-            } else if acceleration >= thresholds.acceleration {
-                (
-                    state::IssueKind::Acceleration,
-                    state::Severity::Information,
-                )
-            } else if acceleration <= -thresholds.critical_deceleration {
-                (
-                    state::IssueKind::HarshBrake,
-                    state::Severity::Critical,
-                )
-            } else if acceleration <= -thresholds.warning_deceleration {
-                (
-                    state::IssueKind::HarshBrake,
-                    state::Severity::Warning,
-                )
-            } else if acceleration <= -thresholds.deceleration {
-                (
-                    state::IssueKind::Deceleration,
-                    state::Severity::Information,
-                )
-            } else {
-                // Small speed changes are simply normal driving.
-                return;
-            };
+        let (issue_kind, severity) = if acceleration >= thresholds.critical_acceleration {
+            (
+                state::IssueKind::HarshAcceleration,
+                state::Severity::Critical,
+            )
+        } else if acceleration >= thresholds.warning_acceleration {
+            (
+                state::IssueKind::HarshAcceleration,
+                state::Severity::Warning,
+            )
+        } else if acceleration >= thresholds.acceleration {
+            (state::IssueKind::Acceleration, state::Severity::Information)
+        } else if acceleration <= -thresholds.critical_deceleration {
+            (state::IssueKind::HarshBrake, state::Severity::Critical)
+        } else if acceleration <= -thresholds.warning_deceleration {
+            (state::IssueKind::HarshBrake, state::Severity::Warning)
+        } else if acceleration <= -thresholds.deceleration {
+            (state::IssueKind::Deceleration, state::Severity::Information)
+        } else {
+            // Small speed changes are simply normal driving.
+            return;
+        };
 
         alarms.push(Alarm {
             vehicle_id: telemetry.vehicle_id,
             alarm_kind: issue_kind,
-            alarm_value: format!(
-                "{:.2} km/h/s",
-                acceleration.abs()
-            ),
+            alarm_value: format!("{:.2} km/h/s", acceleration.abs()),
             severity,
             timestamp: telemetry.last_updated_at,
         });
     }
-
-
 }
 
-fn crossed_down(
-    previous: f64,
-    current: f64,
-    threshold: Option<f64>
-) -> bool {
+fn crossed_down(previous: f64, current: f64, threshold: Option<f64>) -> bool {
     let Some(threshold_val) = threshold else {
         return false;
     };
@@ -290,11 +265,7 @@ fn crossed_down(
     previous >= threshold_val && current < threshold_val
 }
 
-fn crossed_up(
-    previous: f64,
-    current: f64,
-    threshold: Option<f64>
-) -> bool {
+fn crossed_up(previous: f64, current: f64, threshold: Option<f64>) -> bool {
     let Some(threshold_val) = threshold else {
         return false;
     };

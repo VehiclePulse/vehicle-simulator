@@ -23,6 +23,7 @@ async fn main() {
             rear_left: 32.0,
             rear_right: 32.0,
         },
+        mode: vehicle_simulator::model::shared::state::VehicleMode::Driving
     };
 
     let mut simulator = Simulator::new(Duration::from_secs(1));

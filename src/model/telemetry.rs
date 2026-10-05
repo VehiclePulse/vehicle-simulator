@@ -2,6 +2,8 @@ use chrono::DateTime;
 use chrono::Utc;
 use uuid::Uuid;
 
+use crate::model::shared::state::VehicleMode;
+
 pub struct InitialTelemetry {
     pub vehicle_id: Uuid,
     pub latitude: f64,
@@ -12,6 +14,7 @@ pub struct InitialTelemetry {
     pub engine_temperature: f64,
     pub battery_level: f64,
     pub tire_pressure: TirePressure,
+    pub mode: VehicleMode
 }
 
 pub(crate) struct TelemetryState {
@@ -28,6 +31,7 @@ pub(crate) struct TelemetryState {
     pub tire_pressure: TirePressure,
 
     pub last_updated_at: DateTime<Utc>,
+    pub mode: VehicleMode
 }
 
 pub struct TirePressure {
@@ -50,6 +54,7 @@ impl From<InitialTelemetry> for TelemetryState {
             battery_level: initial.battery_level,
             tire_pressure: initial.tire_pressure,
             last_updated_at: Utc::now(),
+            mode: initial.mode
         }
     }
 }

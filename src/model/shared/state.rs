@@ -29,6 +29,12 @@ pub enum Servicing {
     NormalizePressure,
 }
 
+pub enum VehicleMode {
+    //Starting,
+    Driving,
+    Stopping,
+}
+
 impl IssueKind {
     pub fn servicing(self) -> Option<Servicing> {
         match self {

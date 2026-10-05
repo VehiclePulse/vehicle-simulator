@@ -66,7 +66,7 @@ impl ServiceManager {
         }
 
         let target_value = match alarm.alarm_kind {
-            IssueKind::FuelLevel => rng.random_range(29.98..=30.0),
+            IssueKind::FuelLevel => rng.random_range(29.98..=29.99),
 
             IssueKind::BatteryLevel => rng.random_range(1.0..=30.0),
 
@@ -82,10 +82,10 @@ impl ServiceManager {
             target_value,
         };
 
-        println!(
-            "Service scheduled: {:?} | alarm={} | target={:.2}",
-            service.issue_kind, alarm.alarm_value, target_value
-        );
+        // println!(
+        //     "Service scheduled: {:?} | alarm={} | target={:.2}",
+        //     service.issue_kind, alarm.alarm_value, target_value
+        // );
 
         self.pending_services.push(service);
     }
@@ -145,10 +145,10 @@ impl ServiceManager {
 
         let service = self.pending_services.remove(index);
 
-        println!(
-            "Service target reached: {:?} | target={:.2}",
-            service.issue_kind, service.target_value,
-        );
+        // println!(
+        //     "Service target reached: {:?} | target={:.2}",
+        //     service.issue_kind, service.target_value,
+        // );
 
         self.active_service = Some(service);
         self.remaining_seconds = 10.0;
@@ -158,12 +158,10 @@ impl ServiceManager {
 }
 
 impl ServiceManager {
-    pub(crate) fn update(&mut self, telemetry: &mut TelemetryState, elapsed_seconds: f64) -> bool {
+    pub(crate) fn servicing(&mut self, telemetry: &mut TelemetryState, elapsed_seconds: f64) -> bool {
         let Some(service) = self.active_service.as_ref() else {
             return false;
         };
-
-        println!("trying service");
 
         // Safety: servicing only happens while stopped.
         if telemetry.speed > 0.0 {
@@ -176,7 +174,6 @@ impl ServiceManager {
 
         match servicing_kind {
             Servicing::Refuel => {
-                println!("refuelingggggggggggggggg");
                 telemetry.fuel_level = (telemetry.fuel_level + 10.0 * elapsed_seconds).min(100.0);
             }
 
@@ -209,14 +206,14 @@ impl ServiceManager {
 
         self.remaining_seconds -= elapsed_seconds;
 
-        println!(
-            "Servicing {:?} | remaining={:.1}s",
-            service.issue_kind.servicing(),
-            self.remaining_seconds.max(0.0),
-        );
+        // println!(
+        //     "Servicing {:?} | remaining={:.1}s",
+        //     service.issue_kind.servicing(),
+        //     self.remaining_seconds.max(0.0),
+        // );
 
         if self.remaining_seconds <= 0.0 {
-            println!("Service completed: {:?}", service.issue_kind.servicing(),);
+            //println!("Service completed: {:?}", service.issue_kind.servicing(),);
 
             self.active_service = None;
             self.remaining_seconds = 0.0;

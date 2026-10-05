@@ -13,13 +13,8 @@ use tokio::{
 
 use crate::{
     model::{
-        TelemetryMessage,
-        alarm::AlarmGenerator,
-        event::Event,
-        telemetry::{InitialTelemetry, TelemetryState},
-        variable::Variable,
-    },
-    service_manager::service::ServiceManager,
+        TelemetryMessage, alarm::AlarmGenerator, event::Event, shared::state::VehicleMode, telemetry::{InitialTelemetry, TelemetryState}, variable::Variable,
+    }, service_manager::service::ServiceManager,
 };
 
 pub struct Simulator {
@@ -124,7 +119,7 @@ async fn run_simulation(
 
                 let elapsed_seconds = elapsed.as_secs_f64();
 
-                if stopping {
+                if stopping && telemetry_state.speed == 0.0 {
                     let stopped = speed::update_stopping_speed(
                         &mut telemetry_state,
                         elapsed_seconds,
@@ -194,19 +189,9 @@ async fn run_simulation(
 
                 if service_manager.has_active_service() {
                     if telemetry_state.speed > 0.0 {
-
-                        let stopped = speed::update_stopping_speed(
-                            &mut telemetry_state,
-                            elapsed_seconds,
-                        );
-
-                        if stopped {
-                            println!(
-                                "Vehicle stopped. Starting service."
-                            );
-                        }
+                        telemetry_state.mode = VehicleMode::Stopping;
                     } else {
-                        service_manager.update(
+                        service_manager.servicing(
                             &mut telemetry_state,
                             elapsed_seconds,
                         );
@@ -241,7 +226,10 @@ async fn run_simulation(
 fn update_vehicle(telemetry: &mut TelemetryState, elapsed_seconds: f64) {
     let mut rng = rand::rng();
 
-    speed::update_speed(telemetry, &mut rng, elapsed_seconds);
+    match telemetry.mode {
+        VehicleMode::Driving => speed::update_speed(telemetry, &mut rng, elapsed_seconds),
+        VehicleMode::Stopping => _ = speed::update_stopping_speed(telemetry, elapsed_seconds), 
+    }
 
     coordindate::update_coordinates(
         telemetry.speed,
@@ -252,8 +240,6 @@ fn update_vehicle(telemetry: &mut TelemetryState, elapsed_seconds: f64) {
     );
 
     fuel::update_fuel(&mut telemetry.fuel_level, telemetry.speed, elapsed_seconds);
-
-    println!("fuel: {:?}", telemetry.fuel_level);
 
     temperature::update_engine_temperature(
         &mut telemetry.engine_temperature,

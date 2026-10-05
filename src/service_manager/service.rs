@@ -16,7 +16,6 @@ struct PendingService {
 pub struct ServiceManager {
     pending_services: Vec<PendingService>,
     active_service: Option<PendingService>,
-    remaining_seconds: f64,
 }
 
 impl ServiceManager {
@@ -24,7 +23,6 @@ impl ServiceManager {
         Self {
             pending_services: Vec::new(),
             active_service: None,
-            remaining_seconds: 0.0,
         }
     }
 
@@ -34,8 +32,6 @@ impl ServiceManager {
 
     pub fn is_servicing(&self) -> bool {
         self.active_service.is_some()
-        //&& self.waiting_seconds <= 0.0
-        && self.remaining_seconds > 0.0
     }
 
     pub fn handle_alarm(&mut self, alarm: &Alarm, rng: &mut impl RngExt) {
@@ -47,7 +43,6 @@ impl ServiceManager {
             return;
         }
 
-        // 1. Unwrap the Option safely using `if let`
         if self
             .pending_services
             .iter()
@@ -56,7 +51,6 @@ impl ServiceManager {
             return;
         }
 
-        //do we need it ?
         if self
             .active_service
             .as_ref()
@@ -151,40 +145,53 @@ impl ServiceManager {
         // );
 
         self.active_service = Some(service);
-        self.remaining_seconds = 10.0;
 
         true
     }
 }
 
 impl ServiceManager {
-    pub(crate) fn servicing(&mut self, telemetry: &mut TelemetryState, elapsed_seconds: f64) -> bool {
+    pub(crate) fn servicing(&mut self, telemetry: &mut TelemetryState, elapsed_seconds: f64) -> Option<Event> {
         let Some(service) = self.active_service.as_ref() else {
-            return false;
+            return None;
         };
 
-        // Safety: servicing only happens while stopped.
         if telemetry.speed > 0.0 {
-            return false;
+            return None;
         }
 
         let Some(servicing_kind) = service.issue_kind.servicing() else {
-            return false;
+            return None;
         };
 
-        match servicing_kind {
+        let (event_value, finished) = match servicing_kind {
             Servicing::Refuel => {
                 telemetry.fuel_level = (telemetry.fuel_level + 10.0 * elapsed_seconds).min(100.0);
+                
+                (   
+                    telemetry.fuel_level.to_string(),
+                    telemetry.fuel_level == 100.0
+                )
             }
 
             Servicing::Radiate => {
                 telemetry.engine_temperature =
                     (telemetry.engine_temperature - 5.0 * elapsed_seconds).max(70.0);
+
+                    (
+                        telemetry.engine_temperature.to_string(),
+                        telemetry.engine_temperature == 70.0
+                    )
             }
 
             Servicing::Recharge => {
                 telemetry.battery_level =
                     (telemetry.battery_level + 8.0 * elapsed_seconds).min(100.0);
+
+                    (
+                        telemetry.battery_level.to_string(),
+                        telemetry.battery_level == 100.0
+                    )
             }
 
             Servicing::NormalizePressure => {
@@ -201,26 +208,28 @@ impl ServiceManager {
 
                 telemetry.tire_pressure.rear_right =
                     (telemetry.tire_pressure.rear_right + amount).min(36.0);
+
+                (  
+                    telemetry.tire_pressure.to_string(),
+                    telemetry.tire_pressure.front_left == 36.0 
+                    && telemetry.tire_pressure.front_right == 36.0
+                    && telemetry.tire_pressure.rear_left == 36.0
+                    && telemetry.tire_pressure.rear_right == 36.0 
+                )
             }
-        }
+        };
 
-        self.remaining_seconds -= elapsed_seconds;
-
-        // println!(
-        //     "Servicing {:?} | remaining={:.1}s",
-        //     service.issue_kind.servicing(),
-        //     self.remaining_seconds.max(0.0),
-        // );
-
-        if self.remaining_seconds <= 0.0 {
-            //println!("Service completed: {:?}", service.issue_kind.servicing(),);
-
+        if finished {
             self.active_service = None;
-            self.remaining_seconds = 0.0;
-
-            return true;
+            telemetry.mode = crate::model::shared::state::VehicleMode::Driving;
         }
 
-        false
+        Some(Event { 
+            vehicle_id: telemetry.vehicle_id, 
+            event_kind: servicing_kind.get_issue(), 
+            event_value, 
+            servicing: servicing_kind, 
+            timestamp: telemetry.last_updated_at
+        })
     }
 }

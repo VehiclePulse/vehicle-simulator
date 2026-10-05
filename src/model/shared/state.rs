@@ -46,3 +46,14 @@ impl IssueKind {
         }
     }
 }
+
+impl Servicing {
+    pub fn get_issue(&self) -> IssueKind {
+        match self {
+            Servicing::Refuel => IssueKind::FuelLevel,
+            Servicing::Recharge => IssueKind::BatteryLevel,
+            Servicing::Radiate => IssueKind::EngineTemperature,
+            Servicing::NormalizePressure => IssueKind::TirePressure
+        }
+    }
+}

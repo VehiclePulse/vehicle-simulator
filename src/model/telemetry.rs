@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 use uuid::Uuid;
-
+use std::fmt;
 use crate::model::shared::state::VehicleMode;
 
 pub struct InitialTelemetry {
@@ -56,5 +56,18 @@ impl From<InitialTelemetry> for TelemetryState {
             last_updated_at: Utc::now(),
             mode: initial.mode
         }
+    }
+}
+
+impl fmt::Display for TirePressure {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f, 
+            "FL: {:.1}, FR: {:.1}, RL: {:.1}, RR: {:.1}",
+            self.front_left,
+            self.front_right,
+            self.rear_left,
+            self.rear_right
+        )
     }
 }

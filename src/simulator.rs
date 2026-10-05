@@ -119,7 +119,7 @@ async fn run_simulation(
 
                 let elapsed_seconds = elapsed.as_secs_f64();
 
-                if stopping && telemetry_state.speed == 0.0 {
+                if stopping {
                     let stopped = speed::update_stopping_speed(
                         &mut telemetry_state,
                         elapsed_seconds,
@@ -191,15 +191,30 @@ async fn run_simulation(
                     if telemetry_state.speed > 0.0 {
                         telemetry_state.mode = VehicleMode::Stopping;
                     } else {
-                        service_manager.servicing(
+                        if let Some(event) = service_manager.servicing(
                             &mut telemetry_state,
                             elapsed_seconds,
-                        );
+                        ) {
+                            if telemetry_sender
+                                .send(TelemetryMessage::Event(event))
+                                .await
+                                .is_err()
+                                {
+                                    return;
+                                }
+                        };
+
+                        //let event = event::Event.from_alarm();
                     }
                 } else {
                     service_manager.check_targets(
                         &telemetry_state,
                     );
+                    //println!("is Active: {:?}", is_active);
+
+                    // if !is_active {
+                    //     telemetry_state.mode = VehicleMode::Driving;
+                    // }
                 }
 
                 let variable =
@@ -240,6 +255,7 @@ fn update_vehicle(telemetry: &mut TelemetryState, elapsed_seconds: f64) {
     );
 
     fuel::update_fuel(&mut telemetry.fuel_level, telemetry.speed, elapsed_seconds);
+    //println!("fuel level: {:?}", telemetry.fuel_level);
 
     temperature::update_engine_temperature(
         &mut telemetry.engine_temperature,

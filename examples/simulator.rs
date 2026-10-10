@@ -1,17 +1,22 @@
 use std::time::Duration;
 
+use tokio::time;
 use uuid::Uuid;
 use vehicle_simulator::{
-    model::{InitialTelemetry, TelemetryMessage, TirePressure},
+    model::{
+        shared::state::VehicleMode,
+        InitialTelemetry,
+        TelemetryMessage,
+        TirePressure,
+    },
     simulator::Simulator,
 };
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() {
-    let initial_telemetry = InitialTelemetry {
-        vehicle_id: Uuid::new_v4(),
-        latitude: 12.9716,
-        longitude: 77.5946,
+fn create_vehicle(vehicle_id: Uuid, latitude: f64, longitude: f64) -> InitialTelemetry {
+    InitialTelemetry {
+        vehicle_id,
+        latitude,
+        longitude,
         speed: 0.0,
         heading: 90.0,
         fuel_level: 30.01,
@@ -23,41 +28,71 @@ async fn main() {
             rear_left: 32.0,
             rear_right: 32.0,
         },
-        mode: vehicle_simulator::model::shared::state::VehicleMode::Driving
-    };
+        mode: VehicleMode::Driving,
+    }
+}
 
-    let mut simulator = Simulator::new(Duration::from_secs(1));
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
+    let (simulator, mut receiver) = Simulator::new(Duration::from_secs(1));
 
-    let mut receiver = simulator
-        .start(initial_telemetry)
-        .expect("failed to start simulator");
+    // Start the first vehicle.
+    let vehicle1_id = Uuid::new_v4();
 
-    for _ in 0..100 {
-        match receiver.recv().await {
-            Some(TelemetryMessage::Variable(variable)) => {
-                println!("VARIABLE: {variable:#?}");
-            }
+    simulator
+        .start_vehicle(create_vehicle(vehicle1_id, 12.9716, 77.5946))
+        .await
+        .expect("Failed to start vehicle 1");
 
-            Some(TelemetryMessage::Alarm(alarm)) => {
-                println!("ALARM: {alarm:#?}");
-            }
+    println!("Vehicle 1 started: {vehicle1_id}");
 
-            Some(TelemetryMessage::Event(event)) => {
-                println!("EVENT: {event:#?}");
-            }
-
-            None => {
-                println!("Telemetry channel closed.");
-                break;
+    // Print telemetry while the simulation runs.
+    let reader = tokio::spawn(async move {
+        while let Some(message) = receiver.recv().await {
+            match message {
+                TelemetryMessage::Variable(variable) => {
+                    println!("VARIABLE: {variable:#?}");
+                }
+                TelemetryMessage::Alarm(alarm) => {
+                    println!("ALARM: {alarm:#?}");
+                }
+                TelemetryMessage::Event(event) => {
+                    println!("EVENT: {event:#?}");
+                }
             }
         }
-    }
 
-    simulator.stop().await.expect("failed to stop simulator");
+        println!("Telemetry channel closed.");
+    });
 
-    while let Ok(message) = receiver.try_recv() {
-        println!("{message:#?}");
-    }
+    // Wait 10 seconds before starting the second vehicle.
+    time::sleep(Duration::from_secs(10)).await;
 
-    println!("Simulator stopped.");
+    let vehicle2_id = Uuid::new_v4();
+
+    simulator
+        .start_vehicle(create_vehicle(vehicle2_id, 13.0827, 80.2707))
+        .await
+        .expect("Failed to start vehicle 2");
+
+    println!("Vehicle 2 started: {vehicle2_id}");
+
+    // Continue until 30 seconds have elapsed since the first vehicle started.
+    time::sleep(Duration::from_secs(20)).await;
+
+    println!("Stopping vehicle 1...");
+    simulator
+        .stop_vehicle(vehicle1_id)
+        .await
+        .expect("Failed to stop vehicle 1");
+
+    println!("Stopping vehicle 2...");
+    simulator
+        .stop_vehicle(vehicle2_id)
+        .await
+        .expect("Failed to stop vehicle 2");
+
+    println!("Both vehicles stopped.");
+
+    reader.abort();
 }

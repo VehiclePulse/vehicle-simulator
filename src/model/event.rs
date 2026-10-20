@@ -10,6 +10,7 @@ use crate::model::shared::state::Severity;
 #[derive(Debug, Serialize)]
 pub struct Event {
     pub vehicle_id: Uuid,
+    pub registration_number: String,
     pub event_kind: state::IssueKind,
     pub event_value: String,
     pub servicing: state::Servicing,
@@ -26,6 +27,7 @@ impl Event {
 
         Some(Self {
             vehicle_id: alarm.vehicle_id,
+            registration_number: alarm.registration_number.clone(),
             event_kind: alarm.alarm_kind,
             event_value: alarm.alarm_value.clone(),
             servicing,

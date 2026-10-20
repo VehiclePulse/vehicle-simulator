@@ -6,6 +6,7 @@ use crate::model::shared::state::VehicleMode;
 
 pub struct InitialTelemetry {
     pub vehicle_id: Uuid,
+    pub registration_number: String,
     pub latitude: f64,
     pub longitude: f64,
     pub speed: f64,
@@ -19,6 +20,7 @@ pub struct InitialTelemetry {
 
 pub(crate) struct TelemetryState {
     pub vehicle_id: Uuid,
+    pub registration_number: String,
     pub latitude: f64,
     pub longitude: f64,
     pub speed: f64,
@@ -45,6 +47,7 @@ impl From<InitialTelemetry> for TelemetryState {
     fn from(initial: InitialTelemetry) -> Self {
         Self {
             vehicle_id: initial.vehicle_id,
+            registration_number: initial.registration_number.clone(),
             latitude: initial.latitude,
             longitude: initial.longitude,
             speed: initial.speed,

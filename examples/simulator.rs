@@ -15,6 +15,7 @@ use vehicle_simulator::{
 fn create_vehicle(vehicle_id: Uuid, latitude: f64, longitude: f64) -> InitialTelemetry {
     InitialTelemetry {
         vehicle_id,
+        registration_number: String::from("KA01AB1001"),
         latitude,
         longitude,
         speed: 0.0,

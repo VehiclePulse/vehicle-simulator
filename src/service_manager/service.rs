@@ -226,6 +226,7 @@ impl ServiceManager {
 
         Some(Event { 
             vehicle_id: telemetry.vehicle_id, 
+            registration_number: telemetry.registration_number.clone(),
             event_kind: servicing_kind.get_issue(), 
             event_value, 
             servicing: servicing_kind, 

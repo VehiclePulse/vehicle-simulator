@@ -6,6 +6,7 @@ use uuid::Uuid;
 #[derive(Debug, Serialize)]
 pub struct Alarm {
     pub vehicle_id: Uuid,
+    pub registration_number: String,
     pub alarm_kind: state::IssueKind,
     pub alarm_value: String,
     pub severity: state::Severity,
@@ -192,6 +193,7 @@ impl AlarmGenerator {
         if let Some(severity) = severity {
             alarms.push(Alarm {
                 vehicle_id: telemetry.vehicle_id,
+                registration_number: telemetry.registration_number.clone(),
                 alarm_kind: issue_kind,
                 alarm_value: format!("{current:.2}"),
                 severity,
@@ -249,6 +251,7 @@ impl AlarmGenerator {
 
         alarms.push(Alarm {
             vehicle_id: telemetry.vehicle_id,
+            registration_number: telemetry.registration_number.clone(),
             alarm_kind: issue_kind,
             alarm_value: format!("{:.2} km/h/s", acceleration.abs()),
             severity,

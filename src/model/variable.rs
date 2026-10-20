@@ -8,6 +8,7 @@ use crate::model::telemetry::TelemetryState;
 #[derive(Debug, Serialize)]
 pub struct Variable {
     vehicle_id: Uuid,
+    registration_number: String,
     speed: f64,
     heading: f64,
     latitude: f64,
@@ -19,6 +20,7 @@ impl From<&TelemetryState> for Variable {
     fn from(telemetry: &TelemetryState) -> Self {
         Self {
             vehicle_id: telemetry.vehicle_id,
+            registration_number: telemetry.registration_number.clone(),
             speed: telemetry.speed,
             heading: telemetry.heading,
             latitude: telemetry.latitude,
